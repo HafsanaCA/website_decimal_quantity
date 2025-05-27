@@ -5,11 +5,13 @@ import { QuantityButtons } from "@sale/js/quantity_buttons/quantity_buttons";
 
 patch(QuantityButtons.prototype, {
     increaseQuantity() {
-        const newQuantity = Math.round((this.props.quantity + 0.1) * 10) / 10;
+        const step = parseFloat(this.el.getAttribute('step')) || 1;
+        const newQuantity = parseFloat((this.props.quantity + step).toFixed(2));
         this.props.setQuantity(newQuantity);
     },
     decreaseQuantity() {
-        const newQuantity = Math.round((this.props.quantity - 0.1) * 10) / 10;
+        const step = parseFloat(this.el.getAttribute('step')) || 1;
+        const newQuantity = parseFloat((this.props.quantity - step).toFixed(2));
         this.props.setQuantity(newQuantity);
     }
 });
@@ -22,11 +24,12 @@ patch(publicWidget.registry.WebsiteSale.prototype, {
         var min = parseFloat($input.data("min") || 0);
         var max = parseFloat($input.data("max") || Infinity);
         var previousQty = parseFloat($input.val() || 0, 10);
-        var quantity = ($link.has(".fa-minus").length ? -0.1 : 0.1) + previousQty;
-        var newQty = quantity > min ? (quantity < max ? quantity : max) : min;
+        var step = parseFloat($input.attr("step")) || 1;
+        var quantity = ($link.has(".fa-minus").length ? -step : step) + previousQty;
+        var newQty = Math.max(min, Math.min(max, quantity));
 
         if (newQty !== previousQty) {
-            $input.val(newQty.toFixed(1)).trigger('change');
+            $input.val(newQty.toFixed(step < 1 ? 2 : 0)).trigger('change');
         }
         return false;
     },

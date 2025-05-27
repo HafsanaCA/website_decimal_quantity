@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="cart_lines_decimal_qty" inherit_id="website_sale.cart_lines" name="Decimal Quantity in Cart Lines">
+        <xpath expr="//input[contains(@class, 'js_quantity')]" position="replace">
+            <input type="number"
+                   t-att-name="'add_qty_%s' % line.product_id.id"
+                   t-att-min="line.product_uom_qty"
+                   t-att-max="line.product_uom_qty"
+                   class="js_quantity form-control"
+                   t-att-value="line.product_uom_qty"
+                   t-att-step="'0.01' if line.product_id.allow_decimal_qty else '1'" />
+        </xpath>
+    </template>
+</odoo>
