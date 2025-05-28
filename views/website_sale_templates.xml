@@ -4,11 +4,19 @@
         <xpath expr="//input[contains(@class, 'js_quantity')]" position="replace">
             <input type="number"
                    t-att-name="'add_qty_%s' % line.product_id.id"
-                   t-att-min="line.product_uom_qty"
-                   t-att-max="line.product_uom_qty"
+                   t-att-min="0"
+                   t-att-max="2"
                    class="js_quantity form-control"
-                   t-att-value="line.product_uom_qty"
-                   t-att-step="'0.01' if line.product_id.allow_decimal_qty else '1'" />
+                   t-att-value="line.product_id.allow_decimal_qty ? line.product_uom_qty | floatformat:1 : line.product_uom_qty | int"
+                   t-att-step="'0.1' if line.product_id.allow_decimal_qty else '1'"
+                   style="padding:4px 6px;"/>
+        </xpath>
+    </template>
+
+    <template id="cart_header_decimal_qty" inherit_id="website_sale.header_cart_link" name="Decimal Quantity in Cart Header">
+        <xpath expr="//span[contains(@class, 'my_cart_quantity')]" position="replace">
+            <span class="my_cart_quantity"
+                  t-esc="website.sale_get_order().cart_quantity | floatformat:1 if any(line.product_id.allow_decimal_qty for line in website.sale_get_order().order_line) else website.sale_get_order().cart_quantity | int"/>
         </xpath>
     </template>
 </odoo>
