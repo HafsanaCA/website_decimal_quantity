@@ -43,13 +43,12 @@ patch(publicWidget.registry.WebsiteSale.prototype, {
     },
 
     _changeCartQuantity: function ($input, value, $dom_optional, line_id, productIDs) {
-        _.each($dom_optional, function (elem) {
+        $dom_optional.forEach(function (elem) {
             $(elem).find('.js_quantity').text(value);
             productIDs.push($(elem).find('span[data-product-id]').data('product-id'));
         });
         $input.data('update_change', true);
-
-        this._rpc({
+        rpc({
             route: "/shop/cart/update_json",
             params: {
                 line_id: line_id,
@@ -69,20 +68,33 @@ patch(publicWidget.registry.WebsiteSale.prototype, {
             if (!data.cart_quantity) {
                 return window.location = '/shop/cart';
             }
-
-            // Format cart total quantity: show one decimal if any product allows decimals, else integer
             const $cartLines = $('.js_quantity');
-            const hasDecimalProduct = $cartLines.toArray().some(line => parseFloat($(line).attr('step')) < 1);
+            const hasDecimalProduct = $cartLines.toArray().some(line => {
+                const step = parseFloat($(line).attr('step')) || 1;
+                console.log('Line ID:', $(line).data('line-id'), 'Step:', step, 'Product ID:', $(line).data('product-id'));
+                return step < 1;
+            });
+            console.log('hasDecimalProduct:', hasDecimalProduct, 'cart_quantity:', data.cart_quantity);
+
             const formattedQuantity = hasDecimalProduct ? parseFloat(data.cart_quantity).toFixed(1) : parseInt(data.cart_quantity);
-            $(".my_cart_quantity").text(formattedQuantity);
+            console.log('Updating header quantity:', formattedQuantity);
+
+            const $headerQuantity = $('.my_cart_quantity, .cart_quantity, [id="cart_quantity"]');
+            if ($headerQuantity.length) {
+                $headerQuantity.text(formattedQuantity);
+                console.log('Header quantity updated:', $headerQuantity.text());
+            } else {
+                console.error('Header quantity element not found');
+            }
 
             wSaleUtils.updateCartNavBar({
                 ...data,
-                cart_quantity: parseFloat(data.cart_quantity),
+                cart_quantity: formattedQuantity,
             });
 
-            $input.val(data.quantity);
-            $('.js_quantity[data-line-id=' + line_id + ']').val(data.quantity).text(data.quantity);
+            const isDecimal = parseFloat($input.attr('step')) < 1;
+            $input.val(isDecimal ? parseFloat(data.quantity).toFixed(1) : parseInt(data.quantity));
+            $('.js_quantity[data-line-id=' + line_id + ']').val(isDecimal ? parseFloat(data.quantity).toFixed(1) : parseInt(data.quantity)).text(data.quantity);
 
             if (data.warning) {
                 var cart_alert = $('.oe_cart').parent().find('#data_warning');
@@ -92,8 +104,10 @@ patch(publicWidget.registry.WebsiteSale.prototype, {
                 } else {
                     cart_alert.html('<button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button> ' + data.warning);
                 }
-                $input.val(data.quantity);
+                $input.val(isDecimal ? parseFloat(data.quantity).toFixed(1) : parseInt(data.quantity));
             }
+        }).catch(function (error) {
+            console.error('RPC error:', error);
         });
     },
 
@@ -107,7 +121,7 @@ patch(publicWidget.registry.WebsiteSale.prototype, {
             value = 1;
         }
         var $dom = $input.closest('tr');
-        var $dom_optional = $dom.nextUntil(':not(.optional_product.info)');
+        var $dom_optional = $dom.nextUntil(':not(.optional_product.info)').toArray();
         var line_id = parseInt($input.data('line-id'), 10);
         var productIDs = [parseInt($input.data('product-id'), 10)];
         this._changeCartQuantity($input, value, $dom_optional, line_id, productIDs);

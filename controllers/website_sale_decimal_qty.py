@@ -1,7 +1,16 @@
 from odoo.addons.website_sale.controllers.main import WebsiteSale
 from odoo.http import request, route
+import logging
+
+_logger = logging.getLogger(__name__)
 
 class WebsiteSaleDecimalQty(WebsiteSale):
+    def _prepare_product_values(self, product, category, search, **kwargs):
+        res = super()._prepare_product_values(product, category, search, **kwargs)
+        res['allow_decimal_qty'] = product.allow_decimal_qty
+        _logger.debug("Decimal qty flag passed to frontend: %s", product.allow_decimal_qty)
+        return res
+
     @route(['/shop/cart/update_json'], type='json', auth="public", website=True)
     def cart_update_json(self, product_id, line_id=None, add_qty=1, set_qty=0, display=True):
         product = request.env['product.product'].browse(int(product_id))
@@ -30,10 +39,11 @@ class WebsiteSaleDecimalQty(WebsiteSale):
                 'cart_quantity': order.cart_quantity,
                 **request.website.sale_get_order_info()
             })
+            _logger.debug("Cart update response (remove): %s", values)
             return values
 
-        # Call parent method and ensure cart_quantity is included
         result = super().cart_update_json(product_id, line_id, add_qty, set_qty, display)
         order = request.website.sale_get_order()
         result['cart_quantity'] = order.cart_quantity
+        _logger.debug("Cart update response (update): %s", result)
         return result
